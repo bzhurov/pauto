@@ -20,7 +20,7 @@ def get_time():
     return time.strftime('%Y_%m_%d_%H_%M_%S')
 
 class autoRunner(object):
-    __runner_pars = ['start', 'n_start_repeat', 'c']
+    __runner_pars = ['start', 'n_start_repeat', 'c', 'icp']
     def __init__(self, config = {}):
         self.name = config.get('name', '')
         self.bconf = config.get('branch', None)
@@ -30,18 +30,18 @@ class autoRunner(object):
 
     def create_env(self):
         os.mkdir(self.dir)
+        print self.dir
         if self.config_fname: shutil.copy(self.config_fname, self.dir)
         os.chdir(self.dir)
         for f in glob.glob(self.cdir + os.path.sep + 'c.*'):
             shutil.copy(f, self.dir)
         self.logfile = open('auto.log', 'w')
         #Make info file
-        f = open(self.resdir + os.path.sep + self.name + os.path.sep + 'pauto_runs.txt')
+        f = open(self.resdir + os.path.sep + self.name + os.path.sep + 'pauto_runs.txt', 'a')
         f.write(':'.join(self.startt.split('_'))
-                + ';' + ';'.join( ['%s=%4.3f' % (p, self.model.pinit[p]) for p in self.model.pinit] + '\n')
+                + ';%s;' % self.name + ';'.join( ['%s=%4.3f' % (p, self.model.pinit[p]) for p in self.model.pinit]) + '\n'
                 )
-
-        
+        f.close()
 
     def start_log(self):
         self.stdout = sys.stdout
@@ -58,6 +58,7 @@ class autoRunner(object):
             if k in self.__runner_pars: arconf[k] = conf[k]
             else: aconf[k] = conf[k]
         aconf['NDIM'] = self.model.dim
+        aconf['NPAR'] = self.model.npar
         return aconf, arconf
 
     def read_config_from_file(self, fname):
@@ -65,13 +66,14 @@ class autoRunner(object):
         conf = imp.load_source(fname, fname)
         self.bconf = conf.config.get('branch', None)
         self.name = conf.config.get('name', None)
-        self.resdir = conf.config.get('resdir', None)
+        self.resdir = conf.config.get('resdir', '/data/projects')
         self.cdir = conf.config.get('cdir', None)
         self.dir = self.resdir + os.path.sep + self.name + os.path.sep + self.startt
         self.model = odeAuto(model = conf.model)
+        self.model.set_model(cont = self.resolve_icp())
+        self.model.gen_model()
 
     def create_model(self):
-        self.model.set_model(cont = self.resolve_icp())
         self.model.write_ode_c(self.name + '.c')
         self.e = self.name
 
@@ -112,21 +114,30 @@ class autoRunner(object):
             #Compute time-series
             print 'Start ts integration %d' % k
             self.start_log()
-            ts = auto.run(ts, e = self.e, c = self.name + conf.get('start'))
-            ts = auto.rl(ts)(len(ts))
+            if ts:
+                ts = auto.run(ts, c = self.name + conf.get('start'))
+            else:
+                ts = auto.run(ts, e = self.e, c = self.name + conf.get('start'))
+            ts = auto.rl(ts)
+            ts = ts(len(ts.getLabels()))
             self.stop_log()
+            #print ts
             #print ts
             savefname = self.name + '_' + get_time() + conf.get('c')
             aconf['c'] = self.name + conf.get('c')
-            aconf['e'] = self.e
             aconf['sv'] = savefname
+            #print aconf
+            #print ts
+            #print aconf
             self.start_log()
             self.branch = auto.run(ts, **aconf)
             self.branch = auto.rl(self.branch)
             self.stop_log()
             self.fort7parser.parse('b.' + savefname)
-            if self.branch(len(self.branch))['TY'] == 'MX':
-                self.rm(savefname)
+            n = len(self.branch.getLabels())
+            #print self.branch(n)
+            if n == 1 and self.branch(n)['TY'] == 'MX':
+                #self.rm(savefname)
                 continue
             break
 
@@ -193,6 +204,7 @@ class odeAuto(object):
         else:
             self.model = {}
         self.dim = None
+        self.npar = None
 
     def read_config(self, fname):
         conf = imp.load_source(fname, fname)
@@ -216,6 +228,7 @@ class odeAuto(object):
         self.pc = []
         #cont = self.model['cont'].split(' ')
         cont = self.model['cont']
+        self.npar = len(cont)
         for c in cont:
             for p in self.p:
                 if p.name == c: 
@@ -234,7 +247,6 @@ class odeAuto(object):
 
     #print functions
     def write_ode_c(self, fname):
-        self.gen_model()
         f = open(fname, 'w')
 
         f.write("#include \"auto_f2c.h\"\n")
@@ -267,7 +279,7 @@ class odeAuto(object):
         f.write("    //Jacobian for parameters\n")
         f.write("\n    if (ijac == 1) \n    {\n        return 0;\n    }\n")
         for i, j in np.ndindex((len(self.ode), len(self.pv))):
-            f.write("    ARRAY2D(dfdu, %d, %d) = %s;\n" % (i, j, ccode(sympy.diff(self.ode[i], self.pv[j])) ) )
+            f.write("    ARRAY2D(dfdp, %d, %d) = %s;\n" % (i, j, ccode(sympy.diff(self.ode[i], self.pv[j])) ) )
                         
         f.write("\n    return 0;\n}\n\n\n")
         f.write("int stpnt (integer ndim, doublereal t, doublereal *u, doublereal *par)\n")
@@ -277,7 +289,7 @@ class odeAuto(object):
 
         f.write("\n    //init variables\n")
         for i in range(len(self.x)):
-            f.write("    u[%d] = %f;\n" % (i, self.xinit[self.x[i].name] ))
+            f.write("    u[%d] = %2.1f;\n" % (i, self.xinit[self.x[i].name] ))
 
         f.write("    return 0;\n}\n\n")
         f.write("int pvls (integer ndim, const doublereal *u, doublereal *par)\n")
@@ -295,6 +307,7 @@ class odeAuto(object):
         f.write("    const doublereal *par, integer ijac,\n")
         f.write("    doublereal *fs, doublereal *dfdu, doublereal *dfdp)\n")
         f.write("{ return 0; }\n")
+        f.close()
 
 
 if __name__ == '__main__':
