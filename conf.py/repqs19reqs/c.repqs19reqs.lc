@@ -1,0 +1,38 @@
+NDIM = 1                           #system dimension
+IPS = 2                            #this constant defines the problem type ( 2 - Computation of periodic solution )
+IRS = 4                            #This constant sets the label of the solution where the computation is to be restarted
+ILP = 1                            #No detection of folds
+ICP =  [ 1, 11 ]                   #free parameters
+NTST = 100                         #The number of mesh intervals used for discretization
+NCOL = 4                           #The number of Gauss collocation points per mesh interval
+IAD = 1                            #Adapt the mesh every IAD
+ISP = 2                            #This setting enables the detection of all special solutions
+ISW = 1                            #branch switching - normal value
+IPLT = 0                           #L2 norm will be printed
+NBC = 0                            #The number of boundary conditions as specified in the user-supplied routine BCND
+NINT = 0                           #The number of integral conditions as specified in the user-supplied routine ICND
+
+NMX = 999999999                    #The maximum number of steps to be taken along any family
+NPR = 1000                         #This constant can be used to regularly write fort.8
+MXBF = 10                          #This constant, which is effective for algebraic problems only, sets the maximum number of bifurcations to be treated
+#IID = 2                            #Regular diagnostic output to fort.9
+IID = 0                            #NO!! diagnostic output to fort.9
+ITMX = 10                          #The maximum number of iterations allowed in the accurate location of special solutions
+ITNW = 20                          #The maximum number of combined Newton-Chord iterations
+NWTN = 5                           #After NWTN Newton iterations the Jacobian is frozen
+JAC = 1                            #Derivatives with respect to state- and problem-parameters are given in the usersupplied routines
+
+EPSL = 1e-07                       #Relative convergence criterion for equation parameters in the Newton/Chord method
+EPSU = 1e-07                       #Relative convergence criterion for solution components in the Newton/Chord method
+EPSS = 1e-05                       #Relative arclength convergence criterion for the detection of special solutions
+
+DS = 1e-1                          #
+DSMIN = 1e-10                      #This is minimum allowable absolute value of the pseudo-arclength stepsize
+DSMAX = 1e-1                       #The maximum allowable absolute value of the pseudo-arclength stepsize
+IADS = 1                           #Adapt the pseudo-arclength stepsize after every IADS steps
+
+NPAR = 7                           #
+THL = {}                           #Weights in step-size definition
+THU = {}                           #
+
+#UZSTOP = { RTP_LCPARNUM_RTP: RTP_LCPARMAX_RTP }
