@@ -1,19 +1,19 @@
 import numpy as np
 import sys
 sys.path.append('/pylib')
-import qpylib
+import iostream
 
 
 
 class parser:
     def __init__(self, fort8, **kwargs):
-        self.fort8 = qpylib.iostream.IStream(fort8)
+        self.fort8 = iostream.IStream(fort8)
         self.fort7 = None
         self.fort9 = None
         if 'fort7' in kwargs.keys():
-            self.fort7 = qpylib.iostream.filelike(kwargs['fort7'])
+            self.fort7 = iostream.filelike(kwargs['fort7'])
         if 'fort9' in kwargs.keys():
-            self.fort9 = qpylib.iostream.filelike(fort9)
+            self.fort9 = iostream.filelike(fort9)
         self.crds = []
         self.pars = []
         self.types = []

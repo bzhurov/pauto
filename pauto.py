@@ -15,6 +15,7 @@ from sympy.printing import print_ccode
 import sympy.printing.ccode as ccode
 import sympy.parsing.sympy_parser
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def get_time():
@@ -29,9 +30,6 @@ class autoRunner(object):
         self.startt = get_time()
         self.branch = {}
         self.figure = {}
-        for b in self.bconf:
-            k = b['icp'][0]
-            if k not in self.figure: self.figure[k] = plt.figure()
 
     def create_env(self):
         os.mkdir(self.dir)
@@ -78,6 +76,10 @@ class autoRunner(object):
         self.model = odeAuto(model = conf.model)
         self.model.set_model(cont = self.resolve_icp())
         self.model.gen_model()
+        for b in self.bconf:
+            k = b['icp'][0]
+            if k not in self.figure: self.figure[k] = plt.figure()
+
 
     def create_model(self):
         self.model.write_ode_c(self.name + '.c')
@@ -115,8 +117,9 @@ class autoRunner(object):
 
     def run_time(self, conf):
         ts = None
-        ax = self.figure[conf['icp']].add_subplot(111)
-        figname = self.name + '_' + conf['icp'] + '.png'
+        print self.figure, conf
+        ax = self.figure[conf['icp'][0]].add_subplot(111)
+        figname = self.name + '_' + conf['icp'][0] + '.png'
         aconf, conf = self.split_config(conf)
         name = conf['name']
         for k in xrange(conf.get('n_start_repeat', 50)):
@@ -144,8 +147,8 @@ class autoRunner(object):
             break
 
     def run_branch(self, conf):
-        ax = self.figure[conf['icp']].add_subplot(111)
-        figname = self.name + '_' + conf['icp'] + '.png'
+        ax = self.figure[conf['icp'][0]].add_subplot(111)
+        figname = self.name + '_' + conf['icp'][0] + '.png'
         aconf, conf = self.split_config(conf)
         savefname = self.name + '_' + get_time() + conf.get('c')
         aconf['c'] = self.name + conf.get('c')
