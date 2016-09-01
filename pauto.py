@@ -2,6 +2,7 @@
 import sys
 sys.path.append('/data/Programs/auto/07p/python')
 import auto
+import xauto
 import time
 import shutil
 import os
@@ -17,16 +18,20 @@ import numpy as np
 
 
 def get_time():
-    return time.strftime('%Y_%m_%d_%H_%M_%S')
+    return time.strftime('%Y%m%d%H%M%S')
 
 class autoRunner(object):
-    __runner_pars = ['start', 'n_start_repeat', 'c', 'icp']
+    __runner_pars = ['start', 'n_start_repeat', 'c', 'icp', 'name', 'sb', 'sp', 'sc']
     def __init__(self, config = {}):
         self.name = config.get('name', '')
         self.bconf = config.get('branch', None)
         self.config_fname = None
-        self.fort7parser = fort7parser()
         self.startt = get_time()
+        self.branch = {}
+        self.figure = {}
+        for b in self.bconf:
+            k = b['icp'][0]
+            if k not in self.figure: self.figure[k] = plt.figure()
 
     def create_env(self):
         os.mkdir(self.dir)
@@ -38,7 +43,7 @@ class autoRunner(object):
         self.logfile = open('auto.log', 'w')
         #Make info file
         f = open(self.resdir + os.path.sep + self.name + os.path.sep + 'pauto_runs.txt', 'a')
-        f.write(':'.join(self.startt.split('_'))
+        f.write(self.startt
                 + ';%s;' % self.name + ';'.join( ['%s=%4.3f' % (p, self.model.pinit[p]) for p in self.model.pinit]) + '\n'
                 )
         f.close()
@@ -59,6 +64,7 @@ class autoRunner(object):
             else: aconf[k] = conf[k]
         aconf['NDIM'] = self.model.dim
         aconf['NPAR'] = self.model.npar
+
         return aconf, arconf
 
     def read_config_from_file(self, fname):
@@ -107,96 +113,61 @@ class autoRunner(object):
             os.remove('s.' + name)
 
 
-    def run_first(self, conf):
+    def run_time(self, conf):
         ts = None
+        ax = self.figure[conf['icp']].add_subplot(111)
+        figname = self.name + '_' + conf['icp'] + '.png'
         aconf, conf = self.split_config(conf)
+        name = conf['name']
         for k in xrange(conf.get('n_start_repeat', 50)):
             #Compute time-series
             print 'Start ts integration %d' % k
             self.start_log()
             if ts:
-                ts = auto.run(ts, c = self.name + conf.get('start'))
+                ts = auto.run(ts, c = self.name + conf.get('sc'))
             else:
-                ts = auto.run(ts, e = self.e, c = self.name + conf.get('start'))
+                ts = auto.run(ts, e = self.e, c = self.name + conf.get('sc'))
             ts = auto.rl(ts)
             ts = ts(len(ts.getLabels()))
             self.stop_log()
-            #print ts
-            #print ts
             savefname = self.name + '_' + get_time() + conf.get('c')
             aconf['c'] = self.name + conf.get('c')
             aconf['sv'] = savefname
-            #print aconf
-            #print ts
-            #print aconf
-            self.start_log()
-            self.branch = auto.run(ts, **aconf)
-            self.branch = auto.rl(self.branch)
-            self.stop_log()
-            self.fort7parser.parse('b.' + savefname)
-            n = len(self.branch.getLabels())
-            #print self.branch(n)
-            if n == 1 and self.branch(n)['TY'] == 'MX':
-                #self.rm(savefname)
+            branch = xauto.xbranch(ax = ax, figname = figname)
+            branch.run(aconf, ts)
+
+            if branch.len == 1 and branch.get_last_point()['TY'] == 'MX':
+                branch.rm()
+                del branch
                 continue
+            self.branch[name] = branch
             break
 
-    def run_next(self, conf):
+    def run_branch(self, conf):
+        ax = self.figure[conf['icp']].add_subplot(111)
+        figname = self.name + '_' + conf['icp'] + '.png'
         aconf, conf = self.split_config(conf)
         savefname = self.name + '_' + get_time() + conf.get('c')
         aconf['c'] = self.name + conf.get('c')
         aconf['e'] = self.e
         aconf['sv'] = savefname
+        name = conf['name']
 
-        self.start_log()
-        init = self.branch(conf.get('start'))[0]
-        self.branch = auto.run(init, **aconf)
-        self.branch = auto.rl(self.branch)
-        self.stop_log()
-        self.fort7parser.parse('b.' + savefname)
+        branch = xauto.xbranch(ax = ax, figname = figname)
+        branch.run(aconf, conf.get('sp'), self.branch[conf.get('sb')])
 
+        self.branch[name] = branch
 
     def run(self):
         self.create_env()
         self.create_model()
-        self.run_first(self.bconf[0])
-        for i in xrange(1, len(self.bconf)):
-            self.run_next(self.bconf[i])
+        for i in xrange(len(self.bconf)):
+            if self.bconf[i].get('sc', ''):
+                self.run_time(self.bconf[i])
+            else:
+                self.run_branch(self.bconf[i])
 
         
-class fort7parser(object):
-    __TY = {1: 'BP', 2: 'LP', 3: 'HB', 4: 'RG',
-            -4: 'UZ', 5: 'LPC', 6: 'BPC', 7: 'PD',
-            8: 'TR', 9: 'EP', -9: 'MX', -21: 'BT', -31: 'BT',
-            -22: 'CP', -32: 'GH', -13: 'ZH', -23: 'ZH', -33: 'ZH',
-            -25: 'R1', -55: 'R1', -85: 'R1', -76: 'R2', -86: 'R2',
-            -87: 'R3', -88: 'R4', 28: 'LPD', 78: 'LPD', 23: 'LTR',
-            83: 'LTR', 77: 'PTR', 87: 'PTR', 88: 'TTR'}
-
-    def parse_str(self, s):
-        try:
-            ty = int(s[10:14])
-        except ValueError:
-            return None, None, None
-        try:
-            par = float(s[19:28])
-        except ValueError:
-            return None, None, None
-        coord = []
-        for i in xrange(5):
-            try: coord.append(float(s[(38+i*19):(57+i*19)]))
-            except ValueError: return None, None, None
-        return ty, par, np.asarray(coord)
-    def parse(self, f):
-        f = open(f, 'r')
-        for s in f:
-            ty, par, coord = self.parse_str(s)
-            if ty and ty != 4:
-                out = '%3s' % self.__TY[ty]
-                out += ' %12.4f' % par
-                for c in coord: out += ' %12.4f' %c
-                print out
-
 class odeAuto(object):
     def __init__(self, model = None):
         if model:
