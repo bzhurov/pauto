@@ -22,7 +22,7 @@ def get_time():
     return time.strftime('%Y%m%d%H%M%S')
 
 class autoRunner(object):
-    __runner_pars = ['start', 'n_start_repeat', 'c', 'icp', 'name', 'sb', 'sp', 'sc']
+    __runner_pars = ['start', 'n_start_repeat', 'c', 'icp', 'name', 'sb', 'sp', 'sc', 'nmx']
     def __init__(self, config = {}):
         self.name = config.get('name', '')
         self.bconf = config.get('branch', None)
@@ -62,6 +62,7 @@ class autoRunner(object):
             else: aconf[k] = conf[k]
         aconf['NDIM'] = self.model.dim
         aconf['NPAR'] = self.model.npar
+        arconf['nmx'] = conf.get('nmx', 100000)
 
         return aconf, arconf
 
@@ -137,7 +138,7 @@ class autoRunner(object):
             aconf['c'] = self.name + conf.get('c')
             aconf['sv'] = savefname
             branch = xauto.xbranch(ax = ax, figname = figname)
-            branch.run(aconf, ts)
+            branch.run(aconf, ts, nmx = conf['nmx'])
 
             if branch.len == 1 and branch.get_last_point()['TY'] == 'MX':
                 branch.rm()
@@ -157,7 +158,7 @@ class autoRunner(object):
         name = conf['name']
 
         branch = xauto.xbranch(ax = ax, figname = figname)
-        branch.run(aconf, conf.get('sp'), self.branch[conf.get('sb')])
+        branch.run(aconf, conf.get('sp'), self.branch[conf.get('sb')], nmx = conf['nmx'])
 
         self.branch[name] = branch
 
