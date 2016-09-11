@@ -40,6 +40,7 @@ class xbranch(object):
                 self.draw(self.ax, aconf)
             stop = init['TY'] not in ['EP', 'RG']
             if stop: break
+            aconf['DS'] = self.get_step(branch, aconf)
             
 
     def get_point(self, name, n = 0):
@@ -61,6 +62,14 @@ class xbranch(object):
         branch = auto.rl(branch)
         self.stop_log()
         return branch(branch.getLabels()[-1])
+
+    def get_step(self, branch, conf):
+        par = conf['ICP'][0]
+        labels = branch.getLabels()
+        x0 = branch(labels[-2])['PAR(%s)' % par]
+        x1 = branch(labels[-1])['PAR(%s)' % par]
+        sign = '-' if (x1-x0) < 0 else 1e-5
+        return sign
 
 
     def start_log(self):
