@@ -93,7 +93,7 @@ class xbranch(object):
 
     def draw(self, ax, aconf):
         bifd = parser.parser('s.' + aconf['sv'], fort7 = 'b.' + aconf['sv'])
-        bifd.draw([ax])
+        bifd.draw([ax], var = 2)
         ax.get_figure().savefig(self.figname)
 
 class fort7parser(object):
