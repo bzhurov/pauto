@@ -69,8 +69,10 @@ class xbranch(object):
         labels = branch.getLabels()
         x0 = branch(labels[-2])['PAR(%s)' % par]
         x1 = branch(labels[-1])['PAR(%s)' % par]
-        sign = '-' if (x1-x0) < 0 else 1e-5
-        return sign
+#        sign = '-' if (x1-x0) < 0 else 1e-5
+#        return sign
+        if (x1-x0) < 0: return '-'
+        if (x1-x0) > 0: return 1e-5
 
 
     def start_log(self):
@@ -114,7 +116,7 @@ class fort7parser(object):
         except ValueError:
             return None, None, None
         try:
-            par = float(s[19:28])
+            par = float(s[22:38])
         except ValueError:
             return None, None, None
         coord = []
