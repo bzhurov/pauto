@@ -1,6 +1,5 @@
 import numpy as np
 import sys
-sys.path.append('/pylib')
 import iostream
 
 
@@ -10,6 +9,7 @@ class parser:
         self.fort8 = iostream.IStream(fort8)
         self.fort7 = None
         self.fort9 = None
+        self.fort8name = fort8
         if 'fort7' in kwargs.keys():
             self.fort7 = iostream.filelike(kwargs['fort7'])
         if 'fort9' in kwargs.keys():
@@ -21,31 +21,44 @@ class parser:
         self.bifid = []
         self.ctype = None
 
+#     def readinfo8(self, info8):
+#         keys = [
+#             'ibr',        #   :      the index of the branch
+#             'ntot',       #   :      the index of the point
+#             'itp',        #   :      the type of point
+#             'lab',        #   :      the label of the point
+#             'nfpr',       #   :      the number of free parameters used in the computation
+#             'isw',        #   :      the value of isw used in the computation
+#             'ntpl',       #   :      the number of points in the time interval [0,1]
+#                           #             for which solution data are written
+#             'nar',        #   :      the number of values written per point
+#                           #             (nar=ndim+1, since t and u(i), i=1,..,ndim are written)
+#             'nrowpr',     #   :      the number of lines printed following the identifying line
+#                           #             and before the next data set or the end of the file
+#                           #             (used for quickly skipping a data set when searching)
+#             'ntst',       #   :      the number of time intervals used in the discretization
+#             'ncol',       #   :      the number of collocation points used
+#             'nparx',      #   :      the dimension of the array par
+#         ]
+#         for k in keys:
+#             info8[k] = self.fort8.readint()
+#             if info8[k] == None:
+#                 return False
+#         self.fort8.skipval(4)
+#         return True
+
     def readinfo8(self, info8):
-        keys = [
-            'ibr',        #   :      the index of the branch
-            'ntot',       #   :      the index of the point
-            'itp',        #   :      the type of point
-            'lab',        #   :      the label of the point
-            'nfpr',       #   :      the number of free parameters used in the computation
-            'isw',        #   :      the value of isw used in the computation
-            'ntpl',       #   :      the number of points in the time interval [0,1]
-                          #             for which solution data are written
-            'nar',        #   :      the number of values written per point
-                          #             (nar=ndim+1, since t and u(i), i=1,..,ndim are written)
-            'nrowpr',     #   :      the number of lines printed following the identifying line
-                          #             and before the next data set or the end of the file
-                          #             (used for quickly skipping a data set when searching)
-            'ntst',       #   :      the number of time intervals used in the discretization
-            'ncol',       #   :      the number of collocation points used
-            'nparx',      #   :      the dimension of the array par
-        ]
-        for k in keys:
-            info8[k] = self.fort8.readint()
-            if info8[k] == None:
+        keys = ['ibr', 'ntot', 'itp', 'lab', 'nfpr', 'isw',
+                'ntpl', 'nar', 'nrowpr', 'ntst', 'ncol', 'nparx'
+            ]
+        leng = [6, 6, 6, 6, 6, 6, 8, 6, 8, 5, 5, 5, 5, 5, 5, 5]
+        for i, k in enumerate(keys):
+            info8[k] = self.fort8.readn(leng[i], dtype = int)
+            if info8[k] is None:
                 return False
         self.fort8.skipval(4)
         return True
+
 
     def readv28(self, pts8):
         n, m = pts8.shape
@@ -118,6 +131,8 @@ class parser:
                 cibr = int(rwl[0:4])
                 cntot = int(rwl[4:10])
             except ValueError:
+                print 'is_stable7: ValueError'
+                print rwl
                 continue
             if ibr == np.abs(cibr) and ntot == np.abs(cntot):
                 return cntot < 0
