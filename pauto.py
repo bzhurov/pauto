@@ -78,7 +78,7 @@ class autoRunner(object):
         self.model.set_model(cont = self.resolve_icp())
         self.model.gen_model()
         for b in self.bconf:
-            k = b['icp'][0]
+            k = '_'.join(['%s' % x for x in b['icp']])
             if k not in self.figure: self.figure[k] = plt.figure()
 
 
