@@ -52,9 +52,27 @@ class IStream:
             s = self.inp.read(1)
         return buff
 
+    def readn(self, n, dtype = int):
+        buff = ''
+        k = 0
+        s = self.inp.read(1)
+        if s != '\n':
+            buff += s
+            k = 1
+        while k < n:
+            buff += self.inp.read(1)
+            k += 1
+        try:
+            return dtype(buff)
+        except ValueError:
+            return None
+#         return dtype(buff)
+
+
     def skipval(self, n = 1):
         for i in xrange(n):
             if not self.get_unblank():
+                print 1
                 return False
         return True
 
@@ -65,6 +83,7 @@ class IStream:
                 return int(unblank)
             except ValueError:
                 return None
+#             return int(unblank)
         else:
             return None
 
@@ -75,5 +94,6 @@ class IStream:
                 return float(unblank)
             except ValueError:
                 return None
+#             return float(unblank)
         else:
             return None

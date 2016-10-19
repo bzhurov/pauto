@@ -80,8 +80,14 @@ class autoRunner(object):
         self.model.set_model(cont = self.resolve_icp())
         self.model.gen_model()
         for b in self.bconf:
-            k = b['icp'][0]
+            k = self.gen_figname(b['icp'])
             if k not in self.figure: self.figure[k] = plt.figure()
+
+    def gen_figname(self, icp):
+        s = '%s' % icp[0]
+        if len(icp) > 1 and icp[1] != 11:
+            s += '_%s' % icp[1]
+        return s
 
 
     def create_model(self):
@@ -121,8 +127,8 @@ class autoRunner(object):
     def run_time(self, conf):
         ts = None
         print self.figure, conf
-        ax = self.figure[conf['icp'][0]].add_subplot(111)
-        figname = self.name + '_' + conf['icp'][0] + '.png'
+        ax = self.figure[self.gen_figname(conf['icp'])].add_subplot(111)
+        figname = self.name + '_' + self.gen_figname(conf['icp']) + '.png'
         aconf, conf = self.split_config(conf)
         name = conf['name']
         for k in xrange(conf.get('n_start_repeat', 50)):
@@ -150,8 +156,8 @@ class autoRunner(object):
             break
 
     def run_branch(self, conf):
-        ax = self.figure[conf['icp'][0]].add_subplot(111)
-        figname = self.name + '_' + conf['icp'][0] + '.png'
+        ax = self.figure[self.gen_figname(conf['icp'])].add_subplot(111)
+        figname = self.name + '_' + self.gen_figname(conf['icp']) + '.png'
         aconf, conf = self.split_config(conf)
         savefname = self.name + '_' + get_time() + conf.get('c')
         aconf['c'] = self.name + conf.get('c')

@@ -34,6 +34,7 @@ class xbranch(object):
             self.stop_log()
             self.fort7parser.parse('b.' + aconf['sv'])
             n = len(branch.getLabels())
+            if n == 0: break
             self.len += n
             init = branch(branch.getLabels()[-1])
             if n > 0 and init['TY'] != 'MX':
@@ -75,11 +76,13 @@ class xbranch(object):
 
 
     def start_log(self):
+        # pass
         self.stdout = sys.stdout
         self.stderr = sys.stderr
         sys.stdout = self.logfile
         sys.stderr = self.logfile
     def stop_log(self):
+        # pass
         sys.stdout = self.stdout
         sys.stderr = self.stderr
 
@@ -126,7 +129,7 @@ class fort7parser(object):
         for s in f:
             ty, par, coord = self.parse_str(s)
             if ty and ty not in [4, 9]:
-                out = '%3s' % self.__TY[ty]
+                out = '%3s' % self.__TY.get(ty, str(ty))
                 out += ' %12.4e' % par
                 for c in coord: out += ' %12.4e' %c
                 print out
