@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import sys
 sys.path.append('/data/Programs/auto/07p/python')
+import matplotlib
+matplotlib.use('Agg')
 import auto
 import xauto
 import time
