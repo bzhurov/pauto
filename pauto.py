@@ -19,7 +19,6 @@ import sympy.parsing.sympy_parser
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 def get_time():
     return time.strftime('%Y%m%d%H%M%S')
 
@@ -142,7 +141,7 @@ class autoRunner(object):
             ts = auto.rl(ts)
             ts = ts(len(ts.getLabels()))
             self.stop_log()
-            savefname = self.name + '_' + get_time() + conf.get('c')
+            savefname = get_time() + '_' + self.name + '_' + conf.get('name')
             aconf['c'] = self.name + conf.get('c')
             aconf['sv'] = savefname
             branch = xauto.xbranch(ax = ax, figname = figname)
@@ -159,7 +158,7 @@ class autoRunner(object):
         ax = self.figure[self.gen_figname(conf['icp'])].add_subplot(111)
         figname = self.name + '_' + self.gen_figname(conf['icp']) + '.png'
         aconf, conf = self.split_config(conf)
-        savefname = self.name + '_' + get_time() + conf.get('c')
+        savefname = get_time() + '_' + self.name + '_' + conf.get('name')
         aconf['c'] = self.name + conf.get('c')
         aconf['e'] = self.e
         aconf['sv'] = savefname
