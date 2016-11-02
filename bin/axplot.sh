@@ -87,7 +87,7 @@ if [[ -f "${dir}/fort.7" && -f "${dir}/fort.8" ]]; then
 fi
 
 for f in `ls ${dir}/s.* 2>/dev/null | grep -v -F '~'`; do
-	n=`basename $f | sed -r 's/s\.//'`;
+	n=`basename $f | gsed -r 's/s\.//'`;
 	f7+=("${dir}/b.${n}");
 	f8+=("${dir}/s.${n}");
 done
