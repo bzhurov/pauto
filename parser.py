@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import iostream
+import imp
 
 
 
@@ -317,3 +318,66 @@ class parser:
             8 : {'text': 'TR', 'marker': 'D', 'ew': 0}
         }
         return curves, bifs
+
+
+    def npz(self, file, **kwargs):
+        varname = kwargs.get('varname', None)
+        parname = kwargs.get('parname', None)
+        model = kwargs.get('model', None)
+        if not model is None:
+            model = imp.load_source(model, model)
+            varname = model.model.var
+            parname = model.model.par
+        brid = 0
+        bifstop = kwargs.get('bifstop', True)
+        res = {}
+        res['brid'] = []
+        while self.bifcsv(bifstop = bifstop):
+            sbrid = 'b%05d' % brid
+            res['brid'].append(sbrid)
+            brid += 1
+
+            stable = np.average(self.stable) >= 0.5
+            res['%s_stable' % sbrid] = stable
+            res['%s_type' % sbrid] = self.ctype
+            if varname is None: varname = ['var%03d' % k for k in xrange(self.crds.shape[1])]
+            if parname is None: parname = ['par%03d' % k for k in xrange(self.pars.shape[1])]
+            for k in xrange(self.crds.shape[1]): res['%s_%s' % (sbrid, varname[k])] = self.crds[:, k]
+            for k in xrange(self.pars.shape[1]): res['%s_%s' % (sbrid, parname[k])] = self.pars[:, k]
+            for k, bid in enumerate(self.bifid):
+                res['%s_b_%d_id' % (sbrid, k)] = bid
+                res['%s_b_%d_name' % (sbrid, k)] = self.styles()[1][self.types[bid]]['text']
+
+            res['%s_bifnum' % sbrid] = self.bifid.shape[0]
+        res['brid'] = np.asarray(res['brid'])
+        res['brnum'] = brid
+        res['script'] = self.gen_plot_script(res)
+        self.script = res['script']
+        np.savez(file, **res)
+
+    def gen_plot_script(self, res):
+        script = "# v1 = 'par000'\n# v2 = 'var001'\n"
+        s, bs = self.styles()
+        s = s[res['%s_type' % res['brid'][0] ] ]
+        for k, bid in enumerate(res['brid']):
+            cs = '-' if res['%s_stable' % bid] else '--'
+            v1 = '\'%s_\' + v1' % bid
+            v2 = '\'%s_\' + v2' % bid
+            script += "plt.plot(data[%s], data[%s], linestyle = '%s', color = '%s', lw = %s)\n" % (v1, v2, cs, s['color'], s['linewidth'])
+            for i in xrange(res['%s_bifnum' % bid]):
+                bname = res['%s_b_%d_name' % (bid, i)]
+                bifid = res['%s_b_%d_id' % (bid, i)]
+                btype = self.types[i]
+                script += "plt.plot(data[%s][%d], data[%s][%d], marker = '%s', markersize = 12, markeredgewidth = %d," % (
+                            v1, bifid, v2, bifid,
+                            bs[btype]['marker'],
+                            bs[btype]['ew'] )
+                script += " color = 'g', markeredgecolor = 'g', alpha = 0.5, zorder = 1000)\n"
+                        
+                script += "plt.annotate('%s', (data[%s][%s], data[%s][%s])," % (
+                                bname,
+                                v1, bifid, v2, bifid
+                            )
+                script += " textcoords='offset points', xycoords='data',  xytext=(-30, 15))\n"
+        return script
+
