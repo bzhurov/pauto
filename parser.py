@@ -351,32 +351,37 @@ class parser:
             res['%s_bifnum' % sbrid] = self.bifid.shape[0]
         res['brid'] = np.asarray(res['brid'])
         res['brnum'] = brid
-        res['script'] = self.gen_plot_script(res)
+        res['script'] = self.gen_plot_script(res, file)
         self.script = res['script']
         np.savez(file, **res)
 
-    def gen_plot_script(self, res):
-        script = "# v1 = 'par000'\n# v2 = 'var001'\n"
+    def gen_plot_script(self, res, file):
+        savename = file
+        if savename[-4] == '.npz': savename = savename[:-4]
+        dataname = 'data' + savename.replace('.', '_')
+        script = "# v1n = 'par000'\n# v2n = 'var001'\n"
+        script += "%s = np.load('%s')\n" % (dataname, file if file[-4:] == '.npz' else file + '.npz')
         s, bs = self.styles()
         s = s[res['%s_type' % res['brid'][0] ] ]
         for k, bid in enumerate(res['brid']):
             cs = '-' if res['%s_stable' % bid] else '--'
-            v1 = '\'%s_\' + v1' % bid
-            v2 = '\'%s_\' + v2' % bid
-            script += "plt.plot(data[%s], data[%s], linestyle = '%s', color = '%s', lw = %s)\n" % (v1, v2, cs, s['color'], s['linewidth'])
+            v1 = '\'%s_\' + v1n' % bid
+            v2 = '\'%s_\' + v2n' % bid
+            script += "v1 = %s[%s]\nv2 = %s[%s]\n" % (dataname, v1, dataname, v2)
+            script += "plt.plot(v1, v2, linestyle = '%s', color = '%s', lw = %s)\n" % (cs, s['color'], s['linewidth'])
             for i in xrange(res['%s_bifnum' % bid]):
                 bname = res['%s_b_%d_name' % (bid, i)]
                 bifid = res['%s_b_%d_id' % (bid, i)]
                 btype = self.types[i]
-                script += "plt.plot(data[%s][%d], data[%s][%d], marker = '%s', markersize = 12, markeredgewidth = %d," % (
-                            v1, bifid, v2, bifid,
+                script += "plt.plot(v1[%s], v2[%s], marker = '%s', markersize = 12, markeredgewidth = %d," % (
+                            bifid, bifid,
                             bs[btype]['marker'],
                             bs[btype]['ew'] )
                 script += " color = 'g', markeredgecolor = 'g', alpha = 0.5, zorder = 1000)\n"
                         
-                script += "plt.annotate('%s', (data[%s][%s], data[%s][%s])," % (
+                script += "plt.annotate('%s', (v1[%s], v2[%s])," % (
                                 bname,
-                                v1, bifid, v2, bifid
+                                bifid, bifid
                             )
                 script += " textcoords='offset points', xycoords='data',  xytext=(-30, 15))\n"
         return script
