@@ -373,6 +373,7 @@ class parser:
                 bname = res['%s_b_%d_name' % (bid, i)]
                 bifid = res['%s_b_%d_id' % (bid, i)]
                 btype = self.types[i]
+                if btype not in bs: continue
                 script += "plt.plot(v1[%s], v2[%s], marker = '%s', markersize = 12, markeredgewidth = %d," % (
                             bifid, bifid,
                             bs[btype]['marker'],
