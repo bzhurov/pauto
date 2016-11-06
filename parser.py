@@ -347,6 +347,7 @@ class parser:
             for k, bid in enumerate(self.bifid):
                 res['%s_b_%d_id' % (sbrid, k)] = bid
                 res['%s_b_%d_name' % (sbrid, k)] = self.styles()[1][self.types[bid]]['text']
+                res['%s_b_%d_type' % (sbrid, k)] = self.types[bid]
 
             res['%s_bifnum' % sbrid] = self.bifid.shape[0]
         res['brid'] = np.asarray(res['brid'])
@@ -372,8 +373,8 @@ class parser:
             for i in xrange(res['%s_bifnum' % bid]):
                 bname = res['%s_b_%d_name' % (bid, i)]
                 bifid = res['%s_b_%d_id' % (bid, i)]
-                btype = self.types[i]
-                if btype not in bs: continue
+                btype = res['%s_b_%d_type' % (bid, i)]
+                if btype in [4, -4, 9, -9]: continue
                 script += "plt.plot(v1[%s], v2[%s], marker = '%s', markersize = 12, markeredgewidth = %d," % (
                             bifid, bifid,
                             bs[btype]['marker'],
